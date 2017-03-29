@@ -20,7 +20,7 @@ function G = elemGainLookup(k,Azvals,Elvals,lam,ipol)
 % lamRef       -- nlam x 1 reference wavelengths, if more than 1
 % modeInterp   -- 0 ==> linear interpolation, 1 ==> logarithmic
 
-global Gref AzRef ElRef lamRef modeInterp
+global Gref AzRef ElRef lamRef modeInterp AzHi
 
 [nEl,~,~,nlam,~] = size(Gref);
 
@@ -58,6 +58,9 @@ Go = Go(:);   % vectorize
 % Perform lookups in az and el directions.  Find corner lookup values for
 % each point, then perform interpolation.
 %--------------------------------------------------------------------------
+
+kaz = ceil((Azvals - AzHi)/360);     % maps to closest branch cut
+Azvals = Azvals - kaz*360;
 
 [iaz,xsi] = interpHelper(Azvals,AzRef);
 [iel,nu] = interpHelper(Elvals,ElRef);
