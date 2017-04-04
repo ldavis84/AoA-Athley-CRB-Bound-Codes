@@ -112,7 +112,7 @@ end
 AzThresh = [];    % defaults in case no threshold is found
 ElThresh = [];  
 
-YesPlot = nargin >= 9;
+YesPlot = exist('casename','var');
 
 %--------------------------------------------------------------------------
 % Array geometry.

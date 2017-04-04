@@ -96,7 +96,7 @@ El = TrueAzEl(2);
 
 Thresh = Inf(4,2);
 
-YesPlot = nargin >= 9;
+YesPlot = exist('casename','var');
 
 Pol = zeros(nEl,nAz,2);   % optimum polarization choices
 G = zeros(nEl,nAz);
