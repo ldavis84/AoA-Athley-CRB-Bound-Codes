@@ -42,9 +42,12 @@ for i = 1:NSL
     
     r2 = SLL(i);
     
-    qtmp = sqrt(1 + NSRtmp / (1 - r2));
-    q = (qtmp + 1) ./ (qtmp - 1);
-    
+    if (r2 >= 1 - 10*eps)
+        q = 1;
+    else
+        qtmp = sqrt(1 + NSRtmp / (1 - r2));
+        q = (qtmp + 1) ./ (qtmp - 1);
+    end
    
     for m = 0:nsnap-1
         Pi(i) = Pi(i) + (q/(1+q)).^m * nchoosek(nsnap-1+m,m);
