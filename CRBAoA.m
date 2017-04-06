@@ -39,7 +39,12 @@ function Qcrb = CRBAoA(egain,SNRdB,lam,Rarray,Euler,M,...
 % Qcrb      -- 4 x 4 x nsnr the minimal covariance matrix for the local
 %              azimuth and elevation
 
-[~,nelem] = size(Rarray);
+[ndim,nelem] = size(Rarray);
+
+LINEAR = ndim == 1;
+if (LINEAR)
+    Rarray = [Rarray; zeros(2,nelem)];
+end
 
 nsnr = length(SNRdB);
 Qmax = 180^2 * diag([1/3, 1/6]);
@@ -53,11 +58,15 @@ P = eye(nelem) - bo*bo';    % projection matrix
 
 gPg = real(gradbo'*P*gradbo);
 
-diagload = max(abs(gPg(:))) * 10*eps;
-gPg = gPg + diagload*eye(2);
+if (LINEAR)
+    gPg = gPg(1,1);
+else
+    diagload = max(abs(gPg(:))) * 10*eps;
+    gPg = gPg + diagload*eye(2);
+end
 
 Fo = inv(gPg);   % Array strength factor, in terms of true az angle change
-c = cosd(TrueAzEl(1));
+c = cosd(TrueAzEl(2));
 
 Fo(1,:) = Fo(1,:)*c;   % Correct to local dAz
 Fo(:,1) = Fo(:,1)*c;
@@ -69,7 +78,12 @@ S = 10.^(SNRdB/10);    % power SNR
 Ratio = 0.5*(1+S) ./ S.^2 / M;
 
 Qcrb = kron(Ratio,Fo);
-Qcrb = reshape(Qcrb,2,2,nsnr);
+if (LINEAR)
+    Qcrb = reshape(Qcrb,1,1,nsnr);
+    Qmax = Qmax(1,1);
+else
+    Qcrb = reshape(Qcrb,2,2,nsnr);
+end
 
 for i = 1:nsnr
     

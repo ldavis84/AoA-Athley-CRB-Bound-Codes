@@ -83,6 +83,10 @@ pol = pol2jones(TruePol);   % complex polarization vector
 nsnr = length(SNRdB);
 rad2deg = 180/pi;
 
+if (size(Euler,1) == 1)
+    Euler = [Euler; zeros(2,nelem)];
+end
+
 ERROR = dim ~= 1 && dim ~= 3;
 
 if ERROR
@@ -103,6 +107,7 @@ if LINEAR
     Rfull = [Rarray; zeros(2,nelem)];
     Az = TrueAzEl(1);
     El = 0;
+    TrueAzEl(2) = 0;
 else
     Rfull = Rarray;
     Az = TrueAzEl(1);
@@ -324,8 +329,8 @@ if (nSL > 0)
 end
 
 if (LINEAR)
-    rms_deg = sqrt(Q);
-    rmscrb_deg = sqrt(Qcrb);
+    rms_deg = sqrt(Q(:));
+    rmscrb_deg = sqrt(Qcrb(:));
     
     dB1 = 10^(1/20);
     

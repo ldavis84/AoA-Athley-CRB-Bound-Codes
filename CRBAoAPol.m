@@ -59,7 +59,7 @@ diagload = max(abs(gPg(:))) * 10*eps;
 gPg = gPg + diagload*eye(4);
 
 Fo = inv(gPg);   % Array strength factor, in terms of true az angle change
-c = cosd(TrueAzEl(1));
+c = cosd(TrueAzEl(2));
 
 Fo(1,:) = Fo(1,:)*c;   % Correct to local dAz
 Fo(:,1) = Fo(:,1)*c;
