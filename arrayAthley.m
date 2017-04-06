@@ -79,6 +79,9 @@ function [Q,Qcrb,AzThresh,ElThresh,GaindB,iSL] = arrayAthley(...
 
 pol = pol2jones(TruePol);   % complex polarization vector
 
+AzFirst = Azvals(1,1);
+TrueAzEl(1) = TrueAzEl(1) - 360*floor((TrueAzEl(1) - AzFirst)/360);
+
 [dim,nelem] = size(Rarray);
 nsnr = length(SNRdB);
 rad2deg = 180/pi;

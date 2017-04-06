@@ -68,6 +68,9 @@ function [Q,Qcrb,Thresh,GaindB,Pol,iSL] = arrayAthleyPol(egain,...
 % iSL       -- 1 x nsidelobes indices of detected sidelobes in the Azvals
 %              Elvals and GaindB matrices
 
+AzFirst = Azvals(1,1);
+TrueAzEl(1) = TrueAzEl(1) - 360*floor((TrueAzEl(1) - AzFirst)/360);
+
 [dim,nelem] = size(Rarray);
 nsnr = length(SNRdB);
 
