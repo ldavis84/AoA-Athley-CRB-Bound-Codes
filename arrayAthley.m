@@ -40,8 +40,8 @@ function [Q,Qcrb,AzThresh,ElThresh,GaindB,iSL] = arrayAthley(...
 %              the signal m.s. at a gain-of-1 antenna, norm(A) is the norm
 %              of the vector of gains of all apertures, and sig = noise rms
 % lam       -- wavelength of the energy
-% Rarray    -- 3 x nelem locations of the array elements.  For LINEAR
-%              array, 1 x nelem X coordinates of elements  
+% Rarray    -- 3 x nelem locations of the array elements.  If 1 x nelem, 
+%              then zeroes are filled in y and z.
 % Euler     -- 3 x nelem Euler angles in deg indicating the orientation of
 %              each element in the global system. First rotation is about 
 %              +z (Azimuth), then about rotated -y (Elev), then about 
@@ -49,14 +49,15 @@ function [Q,Qcrb,AzThresh,ElThresh,GaindB,iSL] = arrayAthley(...
 %              rotations are assumed zero.  If only 1 angle provided, it is
 %              assumed to be an azimuth rotation, and the rest are zeros.
 % M         -- number of sample points assumed
-% TrueAzEl  -- 1 x 2 true source azimuth, elevation in degrees.  For LINEAR
-%              array, TrueAz only
+% TrueAzEl  -- 1 x 2 true source azimuth, elevation in degrees.  
 % TruePol   -- 1 x 2 true polarization parameters p1 and p2, deg
 % Azvals    -- nEl x nAz azimuth search angles, constant down each column,
-%              angles in degrees.  For LINEAR array, 1 x nAz Azimuth values
+%              angles in degrees.  If nEl == 1, then only azimuth 
+%              performance is examined, and elevation is fixed.
 % Elvals    -- nEl x nAz elevation search angles, constant
 %              along a row, degrees.  El = pi/2 is straight up along z.
-%              For LINEAR array, this is ignored (El = 0 assumed)
+%              If nEl == 1, then only azimuth 
+%              performance is examined, and elevation is fixed at 1st row.
 % casename  -- OPTIONAL casename.  If present, figures are plotted and
 %              saved to files with this prefix
 % Q         -- 2 x 2 x nsnr minimum MSE for each SNR in deg^2:  
@@ -83,6 +84,10 @@ AzFirst = Azvals(1,1);
 TrueAzEl(1) = TrueAzEl(1) - 360*floor((TrueAzEl(1) - AzFirst)/360);
 
 [dim,nelem] = size(Rarray);
+if (dim == 1)
+    Rarray = [Rarray; zeros(2,nelem)];
+end
+
 nsnr = length(SNRdB);
 rad2deg = 180/pi;
 
@@ -98,24 +103,12 @@ if ERROR
     return;
 end
 
-LINEAR = (dim == 1);   % This is the linear array case.
-
 [nEl,nAz] = size(Azvals);
 
-if LINEAR
-    nEl = 1;
-    Azvals = Azvals(1,:);
-    Elvals = zeros(1,nAz);
-    
-    Rfull = [Rarray; zeros(2,nelem)];
-    Az = TrueAzEl(1);
-    El = 0;
-    TrueAzEl(2) = 0;
-else
-    Rfull = Rarray;
-    Az = TrueAzEl(1);
-    El = TrueAzEl(2);
-end
+azONLY = (nEl == 1);   % This is the linear array case.
+
+Az = TrueAzEl(1);
+El = TrueAzEl(2);
 
 AzThresh = [];    % defaults in case no threshold is found
 ElThresh = [];  
@@ -131,22 +124,17 @@ if YesPlot
     clf;
     subplot(2,2,1);
     
-    plot(Rfull(1,:),Rfull(2,:),'ro');
+    plot(Rarray(1,:),Rarray(2,:),'ro');
     xlabel('X Position');
     ylabel('Y Position');
     title(sprintf('Array Plan View, Wavelength = %.3f',lam));
     legend('Phase Centers');
     grid;
     
-    xmin = min(Rfull(1,:));
-    xmax = max(Rfull(1,:));
-    ymin = min(Rfull(2,:));
-    ymax = max(Rfull(2,:));
-    
-    if LINEAR
-        ymin = -lam/2;
-        ymax = lam/2;
-    end
+    xmin = min(Rarray(1,:));
+    xmax = max(Rarray(1,:));
+    ymin = min(Rarray(2,:));
+    ymax = max(Rarray(2,:));
     
     if (xmax > xmin)
         dx = 0.1*(xmax - xmin);
@@ -165,7 +153,7 @@ end
 % Compute the CRB.
 %--------------------------------------------------------------------------
 
-Qcrb = CRBAoA(egain,SNRdB,lam,Rarray,Euler,M,TrueAzEl,TruePol);
+Qcrb = CRBAoA(egain,SNRdB,lam,Rarray,Euler,M,TrueAzEl,TruePol,azONLY);
 
 %--------------------------------------------------------------------------
 % Find beamformed array gain over the search grid.
@@ -173,8 +161,8 @@ Qcrb = CRBAoA(egain,SNRdB,lam,Rarray,Euler,M,TrueAzEl,TruePol);
 
 normalize = true;  % Produce unit vectors
 
-Ao = arrayManifold(egain,pol,lam,Rfull,Euler,Az,El,normalize); 
-A = arrayManifold(egain,pol,lam,Rfull,Euler,Azvals,Elvals,normalize);
+Ao = arrayManifold(egain,pol,lam,Rarray,Euler,Az,El,normalize); 
+A = arrayManifold(egain,pol,lam,Rarray,Euler,Azvals,Elvals,normalize);
 
 G = Ao'*reshape(A,nelem,nEl*nAz);
 G = reshape(G,nEl,nAz);
@@ -186,7 +174,7 @@ GaindB = db(G);
 % are local maxima of the gain.
 %--------------------------------------------------------------------------
 
-if LINEAR
+if azONLY
     iiprev = [1 1:nAz-1];
     iinext = [2:nAz nAz];
     
@@ -285,7 +273,7 @@ Q = Qcrb;
 
 if (nSL > 0)
     
-    if LINEAR
+    if azONLY
         uvSL = AzSL - Az;
         qmax = 180^2/3;    % worst it could ever be--know nothing
     else
@@ -315,7 +303,7 @@ if (nSL > 0)
     
     for k = 1:nsnr
         
-        if LINEAR
+        if azONLY
             qcrb = Qcrb(k);
         else
             qcrb = Qcrb(:,:,k);
@@ -323,7 +311,7 @@ if (nSL > 0)
         
         q = athleyunion(SNRdB(k),M,SLLdB,uvSL,qcrb);
         
-        if LINEAR
+        if azONLY
             Q(k) = max(qcrb,min(qmax,q));
         else
             Q(:,:,k) = maxdef(qcrb,mindef(qmax,q));
@@ -331,7 +319,7 @@ if (nSL > 0)
     end
 end
 
-if (LINEAR)
+if (azONLY)
     rms_deg = sqrt(Q(:));
     rmscrb_deg = sqrt(Qcrb(:));
     
@@ -377,7 +365,7 @@ if (LINEAR)
     end
 end
 
-if (~LINEAR)
+if (~azONLY)
     
     rms_deg = sqrt(squeeze(Q(1,1,:)));
     rmscrb_deg = sqrt(squeeze(Qcrb(1,1,:)));

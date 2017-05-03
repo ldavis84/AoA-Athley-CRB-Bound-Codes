@@ -1,6 +1,6 @@
 function Qcrb = CRBAoA(egain,SNRdB,lam,Rarray,Euler,M,...
-    TrueAzEl,TruePol)
-% Qcrb = CRBAoA(egain,SNRdB,lam,Rarray,Euler,M,TrueAzEl,TruePol);
+    TrueAzEl,TruePol,azONLY)
+% Qcrb = CRBAoA(egain,SNRdB,lam,Rarray,Euler,M,TrueAzEl,TruePol,azONLY);
 % Finds the CRB for an array of point apertures for a single signal
 % when the covariance of the signal white Gaussian signal is unknown but
 % the covariance of the noise is known.  Az CCW from x direction, El up
@@ -36,13 +36,13 @@ function Qcrb = CRBAoA(egain,SNRdB,lam,Rarray,Euler,M,...
 % M         -- number of sample points assumed
 % TrueAzEl  -- 1 x 2 true source azimuth, elevation in degrees.  
 % TruePol   -- 1 x 2 true polarization Jones parameters p1 and p2 in deg
-% Qcrb      -- 4 x 4 x nsnr the minimal covariance matrix for the local
-%              azimuth and elevation
+% azONLY    -- if present and true, then Qcrb is 1x1
+% Qcrb      -- 2 x 2 x nsnr the minimal covariance matrix for the local
+%              azimuth and elevation, 1 x 1 x nsnr if azONLY
 
 [ndim,nelem] = size(Rarray);
 
-LINEAR = ndim == 1;
-if (LINEAR)
+if (azONLY && ndim == 1)
     Rarray = [Rarray; zeros(2,nelem)];
 end
 
@@ -58,7 +58,7 @@ P = eye(nelem) - bo*bo';    % projection matrix
 
 gPg = real(gradbo'*P*gradbo);
 
-if (LINEAR)
+if (azONLY)
     gPg = gPg(1,1);
 else
     diagload = max(abs(gPg(:))) * 10*eps;
@@ -78,7 +78,7 @@ S = 10.^(SNRdB/10);    % power SNR
 Ratio = 0.5*(1+S) ./ S.^2 / M;
 
 Qcrb = kron(Ratio,Fo);
-if (LINEAR)
+if (azONLY)
     Qcrb = reshape(Qcrb,1,1,nsnr);
     Qmax = Qmax(1,1);
 else
